@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: telemetry_postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=telemetry_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: telemetry_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  weakapp:
+    build:
+      context: ./external/weakapp
+      dockerfile: Dockerfile
+    container_name: weakapp
+    ports:
+      - "8080:8080"
+
+  data-ingestor:
+    build: 
+      context: .
+      dockerfile: src/DataIngestor/DataIngestor.Worker/Dockerfile
+    container_name: data_ingestor
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+      - WeakApi__BaseUrl=http://weakapp:8080/
+      - WeakApi__ApiKey=supersecret
+      
+  data-processor:
+    build: 
+      context: .
+      dockerfile: src/DataProcessor/DataProcessor.Worker/Dockerfile
+    container_name: data_processor
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    environment:
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+      - ConnectionStrings__Postgres=Host=postgres;Database=telemetry_db;Username=postgres;Password=postgres
+
+volumes:
+  postgres_data:
