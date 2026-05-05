@@ -1,0 +1,3 @@
+[submodule "external/weakapp"]
+	path = external/weakapp
+	url = https://github.com/nantonov/weakapp.git

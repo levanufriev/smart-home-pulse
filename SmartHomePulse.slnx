@@ -1,3 +1,15 @@
 <Solution>
-  <Project Path="ClassLibrary1/ClassLibrary1.csproj" />
+  <Folder Name="/src/" />
+  <Folder Name="/src/DataIngestor/">
+    <Project Path="src/DataIngestor/DataIngestor.Worker/DataIngestor.Worker.csproj" />
+  </Folder>
+  <Folder Name="/src/DataProcessor/">
+    <Project Path="src/DataProcessor/DataProcessor.Worker/DataProcessor.Worker.csproj" Id="cec21e45-ef58-4a0d-8c3d-fb230ba37332" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Shared.Contracts/Shared.Contracts.csproj" />
+  </Folder>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
 </Solution>
