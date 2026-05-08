@@ -1,4 +1,4 @@
-﻿namespace Shared.Contracts.Enums;
+﻿namespace Shared.Domain.Enums;
 
 public enum SensorType
 {

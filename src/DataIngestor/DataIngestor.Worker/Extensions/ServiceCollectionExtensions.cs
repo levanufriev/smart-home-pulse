@@ -35,6 +35,7 @@ internal static class ServiceCollectionExtensions
                     h.Password(configuration["RabbitMQ:Password"] ?? "guest");
                 });
 
+                cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(1)));
                 cfg.ConfigureEndpoints(context);
             });
         });

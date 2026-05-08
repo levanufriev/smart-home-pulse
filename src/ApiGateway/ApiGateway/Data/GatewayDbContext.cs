@@ -1,11 +1,10 @@
-﻿using MassTransit;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Shared.Domain.Entities;
 using Shared.Domain.Projections;
 
-namespace DataProcessor.Worker.Data;
+namespace ApiGateway.Data;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public class GatewayDbContext(DbContextOptions<GatewayDbContext> options) : DbContext(options)
 {
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<TelemetryRecord> TelemetryRecords => Set<TelemetryRecord>();
@@ -19,18 +18,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.ToTable("rooms");
             entity.HasKey(x => x.Id);
-            entity.HasIndex(x => x.Name).IsUnique();
         });
 
         modelBuilder.Entity<TelemetryRecord>(entity =>
         {
             entity.ToTable("telemetry_records");
-
             entity.HasKey(x => x.Id);
 
             entity.HasOne(x => x.Room).WithMany().HasForeignKey(x => x.RoomId);
 
-            entity.HasIndex(x => new { x.RoomId, x.Type, x.CapturedAt });
             entity.Property(x => x.Type).HasConversion<string>();
         });
 
@@ -41,12 +37,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasOne(x => x.Room).WithMany().HasForeignKey(x => x.RoomId);
 
-            entity.HasIndex(x => new { x.RoomId, x.Type, x.HourBucket }).IsUnique();
             entity.Property(x => x.Type).HasConversion<string>();
         });
-
-        modelBuilder.AddInboxStateEntity();
-        modelBuilder.AddOutboxMessageEntity();
-        modelBuilder.AddOutboxStateEntity();
     }
 }

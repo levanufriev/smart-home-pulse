@@ -1,6 +1,6 @@
 ﻿using DataIngestor.Worker.Models;
-using Shared.Contracts.Enums;
 using Shared.Contracts.Events;
+using Shared.Domain.Enums;
 
 namespace DataIngestor.Worker.Mappers;
 

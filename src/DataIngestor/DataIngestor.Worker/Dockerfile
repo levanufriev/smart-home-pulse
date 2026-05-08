@@ -12,6 +12,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["src/DataIngestor/DataIngestor.Worker/DataIngestor.Worker.csproj", "src/DataIngestor/DataIngestor.Worker/"]
 COPY ["src/Shared/Shared.Contracts/Shared.Contracts.csproj", "src/Shared/Shared.Contracts/"]
+COPY ["src/Shared/Shared.Domain/Shared.Domain.csproj", "src/Shared/Shared.Domain/"]
 RUN dotnet restore "./src/DataIngestor/DataIngestor.Worker/DataIngestor.Worker.csproj"
 COPY . .
 WORKDIR "/src/src/DataIngestor/DataIngestor.Worker"

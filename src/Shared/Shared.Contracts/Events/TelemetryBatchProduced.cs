@@ -1,4 +1,4 @@
-﻿using Shared.Contracts.Enums;
+﻿using Shared.Domain.Enums;
 
 namespace Shared.Contracts.Events;
 

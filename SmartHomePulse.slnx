@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/src/" />
+  <Folder Name="/src/APIGateway/">
+    <Project Path="src/ApiGateway/ApiGateway/ApiGateway.csproj" Id="1c121b2c-e264-490a-bb86-67c31d11b2cd" />
+  </Folder>
   <Folder Name="/src/DataIngestor/">
     <Project Path="src/DataIngestor/DataIngestor.Worker/DataIngestor.Worker.csproj" />
   </Folder>
@@ -8,6 +11,7 @@
   </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/Shared.Contracts/Shared.Contracts.csproj" />
+    <Project Path="src/Shared/Shared.Domain/Shared.Domain.csproj" Id="81bb4d11-59eb-49ea-bdd4-423ba1376cf6" />
   </Folder>
   <Project Path="docker-compose.dcproj">
     <Build />
