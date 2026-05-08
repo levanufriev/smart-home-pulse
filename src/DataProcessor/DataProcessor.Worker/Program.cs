@@ -1,5 +1,7 @@
+using DataProcessor.Worker.Caching;
 using DataProcessor.Worker.Data;
 using DataProcessor.Worker.Extensions;
+using DataProcessor.Worker.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -10,6 +12,11 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     var builder = Host.CreateApplicationBuilder(args);
+
+    builder.Services.AddSingleton<RoomCache>();
+    builder.Services.AddHostedService<CacheWarmupService>();
+
+    builder.Services.AddScoped<ITelemetryAggregationService, TelemetryAggregationService>();
 
     builder.Services
         .AddSerilogLogging(builder.Configuration)

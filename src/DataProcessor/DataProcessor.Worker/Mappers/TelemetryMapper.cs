@@ -1,19 +1,19 @@
-﻿using DataProcessor.Worker.Data.Entities;
-using Shared.Contracts.Events;
+﻿using Shared.Contracts.Events;
+using Shared.Domain.Entities;
 
 namespace DataProcessor.Worker.Mappers;
 
 public static class TelemetryMapper
 {
-    public static TelemetryRecord ToEntity(this TelemetryPoint point, Guid batchId, DateTime capturedAt)
+    public static TelemetryRecord ToEntity(this TelemetryPoint point, Guid batchId, Guid roomId, DateTime capturedAt)
     {
         return new TelemetryRecord
         {
             Id = Guid.NewGuid(),
             BatchEventId = batchId,
+            RoomId = roomId,
             CapturedAt = capturedAt,
             Type = point.Type,
-            RoomName = point.RoomName,
             Energy = point.Energy,
             MotionDetected = point.MotionDetected,
             Co2 = point.Co2,
@@ -27,7 +27,7 @@ public static class TelemetryMapper
         return new TelemetrySummary(
             RecordId: record.Id,
             Type: record.Type,
-            RoomName: record.RoomName,
+            RoomId: record.RoomId,
             Energy: record.Energy,
             MotionDetected: record.MotionDetected,
             Co2: record.Co2,

@@ -1,11 +1,11 @@
-﻿using Shared.Contracts.Enums;
+﻿using Shared.Domain.Enums;
 
 namespace Shared.Contracts.Events;
 
 public record TelemetrySummary(
     Guid RecordId,
     SensorType Type,
-    string RoomName,
+    Guid RoomId,
     double? Energy = null,
     bool? MotionDetected = null,
     int? Co2 = null,
