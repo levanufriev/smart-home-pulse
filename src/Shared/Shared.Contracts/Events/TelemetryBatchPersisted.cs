@@ -15,4 +15,5 @@ public record TelemetrySummary(
 public record TelemetryBatchPersisted(
     Guid BatchId,
     DateTime SavedAt,
+    DateTime CapturedAt,
     List<TelemetrySummary> SavedRecords);

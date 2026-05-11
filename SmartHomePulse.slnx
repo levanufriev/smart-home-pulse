@@ -9,6 +9,9 @@
   <Folder Name="/src/DataProcessor/">
     <Project Path="src/DataProcessor/DataProcessor.Worker/DataProcessor.Worker.csproj" Id="cec21e45-ef58-4a0d-8c3d-fb230ba37332" />
   </Folder>
+  <Folder Name="/src/NotificationService/">
+    <Project Path="src/NotificationService/NotificationService/NotificationService.csproj" Id="1f672726-1b53-45a7-8d7a-3ca87fa27287" />
+  </Folder>
   <Folder Name="/src/Shared/">
     <Project Path="src/Shared/Shared.Contracts/Shared.Contracts.csproj" />
     <Project Path="src/Shared/Shared.Domain/Shared.Domain.csproj" Id="81bb4d11-59eb-49ea-bdd4-423ba1376cf6" />
