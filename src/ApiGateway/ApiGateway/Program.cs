@@ -14,8 +14,8 @@ builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("GraphQLPolicy", opt =>
     {
-        opt.PermitLimit = 100;
-        opt.Window = TimeSpan.FromMinutes(1);
+        opt.PermitLimit = 300;
+        opt.Window = TimeSpan.FromSeconds(15);
         opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         opt.QueueLimit = 5;
     });
