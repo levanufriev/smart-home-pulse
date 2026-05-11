@@ -9,7 +9,6 @@ namespace ApiGateway.GraphQL;
 
 public class Query
 {
-    [UsePaging(MaxPageSize = 100)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
@@ -26,7 +25,6 @@ public class Query
         return dbContext.Rooms.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 
-    [UsePaging(MaxPageSize = 50)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
@@ -37,13 +35,47 @@ public class Query
         return dbContext.TelemetryRecords.Where(t => t.RoomId == roomId);
     }
 
-    [UsePaging(MaxPageSize = 250)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public IQueryable<HourlyAggregate> GetHourlyAggregates(GatewayDbContext dbContext)
+    public IQueryable<HourlyAggregate> GetHourlyAggregates(
+        Guid roomId,
+        GatewayDbContext dbContext)
     {
-        return dbContext.HourlyAggregates;
+        return dbContext.HourlyAggregates.Where(a => a.RoomId == roomId);
+    }
+
+    public async Task<IList<DailyAggregate>> GetDailyAggregatesAsync(
+        Guid roomId,
+        DateTime startTime,
+        DateTime endTime,
+        SensorType? type,
+        GatewayDbContext dbContext,
+        CancellationToken ct)
+    {
+        var query = dbContext.HourlyAggregates
+            .Where(a => a.RoomId == roomId
+                     && a.HourBucket >= startTime
+                     && a.HourBucket <= endTime);
+
+        if (type.HasValue)
+            query = query.Where(a => a.Type == type.Value);
+
+        return await query
+            .GroupBy(a => new { a.RoomId, a.Type, DayBucket = a.HourBucket.Date })
+            .Select(g => new DailyAggregate
+            {
+                RoomId = g.Key.RoomId,
+                Type = g.Key.Type,
+                DayBucket = g.Key.DayBucket,
+                TotalEnergy = g.Sum(a => a.TotalEnergy),
+                AvgCo2 = g.Average(a => a.AvgCo2),
+                AvgPm25 = g.Average(a => a.AvgPm25),
+                AvgHumidity = g.Average(a => a.AvgHumidity),
+                MotionCount = g.Sum(a => a.MotionCount),
+            })
+            .OrderBy(a => a.DayBucket)
+            .ToListAsync(ct);
     }
 
     public async Task<DailyRoomSummary?> GetDailySummaryAsync(

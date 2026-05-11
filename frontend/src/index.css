@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+  }
+}
+
+@layer components {
+  .widget-container {
+    @apply bg-white rounded-lg border border-gray-200 shadow-sm p-6;
+  }
+  
+  .chart-controls {
+    @apply flex items-center justify-between mb-4;
+  }
+  
+  .timeframe-buttons {
+    @apply flex space-x-2;
+  }
+  
+  .timeframe-button {
+    @apply px-3 py-2 text-sm font-medium rounded-md border transition-colors;
+  }
+  
+  .timeframe-button-active {
+    @apply bg-blue-500 text-white border-blue-500;
+  }
+  
+  .timeframe-button-inactive {
+    @apply bg-white text-gray-700 border-gray-300 hover:bg-gray-50;
+  }
+  
+  .filter-button {
+    @apply px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors;
+  }
+  
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+  
+  .error-container {
+    @apply flex flex-col items-center justify-center p-8 text-center;
+  }
+}
