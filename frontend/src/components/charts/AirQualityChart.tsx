@@ -36,7 +36,6 @@ export const AirQualityChart: React.FC = () => {
     useState<TimeFrame>("LAST_HOUR");
   const [liveAppends, setLiveAppends] = useState<AirQualityDataPoint[]>([]);
 
-  // Fires every 30s in LAST_HOUR mode — used only to advance the visual cutoff, not to retrigger queries
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (selectedTimeFrame !== "LAST_HOUR") return;
@@ -44,12 +43,10 @@ export const AirQualityChart: React.FC = () => {
     return () => clearInterval(id);
   }, [selectedTimeFrame]);
 
-  // Clear live appends when switching timeframes
   useEffect(() => {
     setLiveAppends([]);
   }, [selectedTimeFrame]);
 
-  // Frozen at load / timeframe switch — intentionally no tick so Apollo fires exactly once
   const { startTime: baseStartTime, endTime: baseEndTime } = useMemo(
     () => getTimeRangeFromTimeFrame(selectedTimeFrame),
     [selectedTimeFrame]
@@ -71,11 +68,9 @@ export const AirQualityChart: React.FC = () => {
     skip: !selectedRoomId,
   });
 
-  // Advances every tick — drives a pure JS filter, no network request
   const visualStartTime = useMemo(() => {
     if (selectedTimeFrame !== "LAST_HOUR") return 0;
     return Date.now() - 60 * 60 * 1000;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTimeFrame, tick]);
 
   const handleTelemetryUpdate = useCallback(
@@ -124,7 +119,6 @@ export const AirQualityChart: React.FC = () => {
     );
   }
 
-  // Only show skeleton on initial load — use previousData during refetch to avoid bleep
   if (loading && !data && !previousData) {
     return (
       <div className="widget-container">
@@ -170,7 +164,6 @@ export const AirQualityChart: React.FC = () => {
           humidity: item.humidity ?? null,
         }));
 
-  // Exclude live points already covered by the snapshot to avoid duplicates after reconnect
   const latestBaseTime =
     baseData.length > 0
       ? Math.max(...baseData.map((d) => new Date(d.timestamp).getTime()))

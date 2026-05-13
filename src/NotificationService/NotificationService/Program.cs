@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using NotificationService.Extensions;
 using NotificationService.Hubs;
@@ -15,6 +16,8 @@ try
         .AddSerilogLogging(builder.Configuration)
         .AddMessaging(builder.Configuration);
 
+    // Hub JSON payloads: SensorType (C# enum) → JSON strings "ENERGY", "MOTION", "AIR_QUALITY"
+    // (not raw 1,2,3). JsonNamingPolicy.SnakeCaseUpper maps Energy→ENERGY, AirQuality→AIR_QUALITY.
     builder.Services.AddSignalR()
         .AddJsonProtocol(options =>
         {

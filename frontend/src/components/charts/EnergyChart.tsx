@@ -30,12 +30,12 @@ import type { LiveTelemetryUpdate } from "../../types/signalr";
 import { SensorType } from "../../types";
 
 export const EnergyChart: React.FC = () => {
+  // TODO: ref only to props which you use inside component (ex. in DailySummary)
   const { selectedRoomId } = useRoomStore();
   const [selectedTimeFrame, setSelectedTimeFrame] =
     useState<TimeFrame>("LAST_HOUR");
   const [liveAppends, setLiveAppends] = useState<ChartDataPoint[]>([]);
 
-  // Fires every 30s in LAST_HOUR mode — used only to advance the visual cutoff, not to retrigger queries
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (selectedTimeFrame !== "LAST_HOUR") return;
@@ -43,14 +43,14 @@ export const EnergyChart: React.FC = () => {
     return () => clearInterval(id);
   }, [selectedTimeFrame]);
 
+  // TODO: merge those useEffects
   useEffect(() => {
     setLiveAppends([]);
   }, [selectedTimeFrame]);
 
-  // Frozen at load / timeframe switch — intentionally no tick so Apollo fires exactly once
   const { startTime: baseStartTime, endTime: baseEndTime } = useMemo(
     () => getTimeRangeFromTimeFrame(selectedTimeFrame),
-    [selectedTimeFrame]
+    [selectedTimeFrame],
   );
   const useAggregated = shouldUseAggregatedData(selectedTimeFrame);
   const useDailyAggregated = shouldUseDailyAggregatedData(selectedTimeFrame);
@@ -69,17 +69,15 @@ export const EnergyChart: React.FC = () => {
     skip: !selectedRoomId,
   });
 
-  // Advances every tick — drives a pure JS filter, no network request
   const visualStartTime = useMemo(() => {
     if (selectedTimeFrame !== "LAST_HOUR") return 0;
     return Date.now() - 60 * 60 * 1000;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTimeFrame, tick]);
 
   const handleTelemetryUpdate = useCallback(
     (update: LiveTelemetryUpdate) => {
       if (selectedTimeFrame !== "LAST_HOUR") return;
-      const energyRecords = update.records.filter( 
+      const energyRecords = update.records.filter(
         (r) => r.type === SensorType.ENERGY,
       );
       if (energyRecords.length === 0) return;
@@ -99,10 +97,16 @@ export const EnergyChart: React.FC = () => {
       roomId: selectedRoomId!,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
-      useAggregated: shouldUseAggregatedData(selectedTimeFrame),
-      useDailyAggregated: shouldUseDailyAggregatedData(selectedTimeFrame),
+      useAggregated: useAggregated,
+      useDailyAggregated: useDailyAggregated,
     });
-  }, [refetch, selectedRoomId, selectedTimeFrame]);
+  }, [
+    refetch,
+    selectedRoomId,
+    selectedTimeFrame,
+    useAggregated,
+    useDailyAggregated,
+  ]);
 
   useLiveTelemetry({
     onTelemetryUpdate: handleTelemetryUpdate,
@@ -159,7 +163,6 @@ export const EnergyChart: React.FC = () => {
           value: item.energy || 0,
         }));
 
-  // Exclude live points already covered by the snapshot to avoid duplicates after reconnect
   const latestBaseTime =
     baseData.length > 0
       ? Math.max(...baseData.map((d) => new Date(d.timestamp).getTime()))
@@ -221,7 +224,7 @@ export const EnergyChart: React.FC = () => {
           />
           <Tooltip
             formatter={(value: any) => [`${value?.toFixed(2)} kWh`, "Energy"]}
-            labelFormatter={(value: string) =>
+            labelFormatter={(value: any) =>
               formatTimestamp(value, selectedTimeFrame)
             }
             labelStyle={{ color: "#374151" }}

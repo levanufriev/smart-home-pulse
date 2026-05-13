@@ -8,7 +8,6 @@ import type { LiveTelemetryUpdate, DailySummaryChangedNotification } from '../ty
 const SIGNALR_ENDPOINT =
   import.meta.env.VITE_SIGNALR_ENDPOINT || 'http://localhost:5001/hubs/telemetry';
 
-
 const connection: HubConnection = new HubConnectionBuilder()
   .withUrl(SIGNALR_ENDPOINT)
   .withAutomaticReconnect({
@@ -22,8 +21,6 @@ const connection: HubConnection = new HubConnectionBuilder()
 let startPromise: Promise<void> | null = null;
 let refCount = 0;
 let currentRoomId: string | null = null;
-
-// ---- state-change listeners ----
 
 type ConnectionStateHandler = (state: 'reconnecting' | 'reconnected' | 'closed') => void;
 const stateHandlers = new Set<ConnectionStateHandler>();

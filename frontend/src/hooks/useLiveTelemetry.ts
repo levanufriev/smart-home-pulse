@@ -77,7 +77,6 @@ export function useLiveTelemetry({
     });
   }, []);
 
-  // Optional: visibility change catch-up — fires onReconnected when tab becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {

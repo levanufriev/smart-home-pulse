@@ -2,27 +2,31 @@ import React, { useCallback, useRef } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_DAILY_SUMMARY } from "../graphql/queries";
 import { useRoomStore } from "../store/roomStore";
-import type { GetDailySummaryResponse, GetDailySummaryVariables } from "../types";
+import type {
+  GetDailySummaryResponse,
+  GetDailySummaryVariables,
+} from "../types";
 import { getTodayDateString } from "../utils/dateUtils";
 import { DailySummarySkeleton } from "./ui/Skeleton";
 import { ErrorState } from "./ui/ErrorState";
 import { useLiveTelemetry } from "../hooks/useLiveTelemetry";
 import type { DailySummaryChangedNotification } from "../types/signalr";
 
+// TODO: save here page scheleton and extract changeble content into separate components
 export const DailySummary: React.FC = () => {
-  const { selectedRoomId } = useRoomStore();
+  const selectedRoomId = useRoomStore((state) => state.selectedRoomId);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data, previousData, loading, error, refetch } = useQuery<GetDailySummaryResponse, GetDailySummaryVariables>(
-    GET_DAILY_SUMMARY,
-    {
-      variables: {
-        roomId: selectedRoomId!,
-        date: getTodayDateString(),
-      },
-      skip: !selectedRoomId,
-    }
-  );
+  const { data, previousData, loading, error, refetch } = useQuery<
+    GetDailySummaryResponse,
+    GetDailySummaryVariables
+  >(GET_DAILY_SUMMARY, {
+    variables: {
+      roomId: selectedRoomId!,
+      date: getTodayDateString(),
+    },
+    skip: !selectedRoomId,
+  });
 
   const handleSummaryChanged = useCallback(
     (notification: DailySummaryChangedNotification) => {
@@ -30,7 +34,7 @@ export const DailySummary: React.FC = () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => refetch(), 500);
     },
-    [refetch]
+    [refetch],
   );
 
   const handleReconnected = useCallback(() => {
@@ -53,7 +57,6 @@ export const DailySummary: React.FC = () => {
     );
   }
 
-  // Only show skeleton on initial load — use previousData during refetch to avoid bleep
   if (loading && !data && !previousData) {
     return (
       <div className="widget-container">
@@ -63,6 +66,7 @@ export const DailySummary: React.FC = () => {
     );
   }
 
+  // TODO: Create ErrorBoundary component
   if (error && !data && !previousData) {
     return (
       <div className="widget-container">
@@ -102,7 +106,7 @@ export const DailySummary: React.FC = () => {
           })}
         </span>
       </div>
-
+      // TODO: make it as reusable widget, to not copypaste same structure
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-blue-50 rounded-lg p-4">
           <h3 className="text-lg font-medium text-blue-800 mb-3">Energy</h3>

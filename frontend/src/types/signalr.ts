@@ -17,6 +17,5 @@ export interface LiveTelemetryUpdate {
 
 export interface DailySummaryChangedNotification {
   roomId: string;
-  /** ISO date string "YYYY-MM-DD" */
   date: string;
 }
