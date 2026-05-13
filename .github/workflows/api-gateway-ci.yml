@@ -1,0 +1,23 @@
+name: API Gateway CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/ApiGateway/**'
+      - 'src/Shared/**'
+  push:
+    branches: [main]
+    paths:
+      - 'src/ApiGateway/**'
+      - 'src/Shared/**'
+
+jobs:
+  dotnet-ci:
+    uses: ./.github/workflows/shared-dotnet-ci.yml
+    secrets: inherit
+    with:
+      service_name: api-gateway
+      project_path: src/ApiGateway/ApiGateway
+      test_project_path: ''
+      push_image: ${{ github.event_name == 'push' }}

@@ -1,0 +1,111 @@
+name: Shared .NET CI
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+      project_path:
+        required: true
+        type: string
+      test_project_path:
+        description: Comma-separated test project directories (relative to repo root). Empty skips tests.
+        required: false
+        type: string
+        default: ''
+      push_image:
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  dotnet-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore "${{ inputs.project_path }}"/*.csproj
+
+      - name: Restore test project dependencies
+        if: inputs.test_project_path != ''
+        env:
+          TEST_PATHS: ${{ inputs.test_project_path }}
+        run: |
+          IFS=',' read -ra PATHS <<< "$TEST_PATHS"
+          for path in "${PATHS[@]}"; do
+            path="$(echo "$path" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+            [ -z "$path" ] && continue
+            dotnet restore "$path"/*.csproj
+          done
+
+      - name: Build service
+        run: dotnet build "${{ inputs.project_path }}"/*.csproj -c Release --no-restore
+
+      - name: Build test projects
+        if: inputs.test_project_path != ''
+        env:
+          TEST_PATHS: ${{ inputs.test_project_path }}
+        run: |
+          IFS=',' read -ra PATHS <<< "$TEST_PATHS"
+          for path in "${PATHS[@]}"; do
+            path="$(echo "$path" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+            [ -z "$path" ] && continue
+            dotnet build "$path"/*.csproj -c Release --no-restore
+          done
+
+      - name: Test
+        if: inputs.test_project_path != ''
+        env:
+          TEST_PATHS: ${{ inputs.test_project_path }}
+        run: |
+          IFS=',' read -ra PATHS <<< "$TEST_PATHS"
+          for path in "${PATHS[@]}"; do
+            path="$(echo "$path" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+            [ -z "$path" ] && continue
+            dotnet test "$path"/*.csproj -c Release --no-build
+          done
+
+      - name: Set container image reference
+        id: image
+        run: |
+          owner_lc="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          svc_lc="$(echo '${{ inputs.service_name }}' | tr '[:upper:]' '[:lower:]')"
+          echo "ref=ghcr.io/${owner_lc}/${svc_lc}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: inputs.push_image
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image (context = repo root; Dockerfile beside project)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ github.workspace }}
+          file: ${{ github.workspace }}/${{ inputs.project_path }}/Dockerfile
+          push: ${{ inputs.push_image }}
+          tags: ${{ steps.image.outputs.ref }}

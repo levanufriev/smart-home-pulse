@@ -1,0 +1,23 @@
+name: Notification Service CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/NotificationService/**'
+      - 'src/Shared/**'
+  push:
+    branches: [main]
+    paths:
+      - 'src/NotificationService/**'
+      - 'src/Shared/**'
+
+jobs:
+  dotnet-ci:
+    uses: ./.github/workflows/shared-dotnet-ci.yml
+    secrets: inherit
+    with:
+      service_name: notification-service
+      project_path: src/NotificationService/NotificationService
+      test_project_path: ''
+      push_image: ${{ github.event_name == 'push' }}
