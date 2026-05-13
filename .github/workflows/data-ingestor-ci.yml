@@ -1,0 +1,23 @@
+name: Data Ingestor CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/DataIngestor/**'
+      - 'src/Shared/**'
+  push:
+    branches: [main]
+    paths:
+      - 'src/DataIngestor/**'
+      - 'src/Shared/**'
+
+jobs:
+  dotnet-ci:
+    uses: ./.github/workflows/shared-dotnet-ci.yml
+    secrets: inherit
+    with:
+      service_name: data-ingestor
+      project_path: src/DataIngestor/DataIngestor.Worker
+      test_project_path: ''
+      push_image: ${{ github.event_name == 'push' }}

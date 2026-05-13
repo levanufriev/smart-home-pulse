@@ -1,0 +1,27 @@
+name: Data Processor CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/DataProcessor/**'
+      - 'tests/DataProcessor.UnitTests/**'
+      - 'tests/DataProcessor.IntegrationTests/**'
+      - 'src/Shared/**'
+  push:
+    branches: [main]
+    paths:
+      - 'src/DataProcessor/**'
+      - 'tests/DataProcessor.UnitTests/**'
+      - 'tests/DataProcessor.IntegrationTests/**'
+      - 'src/Shared/**'
+
+jobs:
+  dotnet-ci:
+    uses: ./.github/workflows/shared-dotnet-ci.yml
+    secrets: inherit
+    with:
+      service_name: data-processor
+      project_path: src/DataProcessor/DataProcessor.Worker
+      test_project_path: tests/DataProcessor.UnitTests/DataProcessor.UnitTests,tests/DataProcessor.IntegrationTests/DataProcessor.IntegrationTests
+      push_image: ${{ github.event_name == 'push' }}
