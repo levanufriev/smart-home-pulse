@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_DAILY_SUMMARY } from "../graphql/queries";
 import { useRoomStore } from "../store/roomStore";
@@ -9,11 +9,15 @@ import type {
 import { getTodayDateString } from "../utils/dateUtils";
 import { DailySummarySkeleton } from "./ui/Skeleton";
 import { ErrorState } from "./ui/ErrorState";
+import { useLiveTelemetry } from "../hooks/useLiveTelemetry";
+import type { DailySummaryChangedNotification } from "../types/signalr";
 
+// TODO: save here page scheleton and extract changeble content into separate components
 export const DailySummary: React.FC = () => {
-  const { selectedRoomId } = useRoomStore();
+  const selectedRoomId = useRoomStore((state) => state.selectedRoomId);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data, loading, error, refetch } = useQuery<
+  const { data, previousData, loading, error, refetch } = useQuery<
     GetDailySummaryResponse,
     GetDailySummaryVariables
   >(GET_DAILY_SUMMARY, {
@@ -22,6 +26,24 @@ export const DailySummary: React.FC = () => {
       date: getTodayDateString(),
     },
     skip: !selectedRoomId,
+  });
+
+  const handleSummaryChanged = useCallback(
+    (notification: DailySummaryChangedNotification) => {
+      if (notification.date !== getTodayDateString()) return;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => refetch(), 500);
+    },
+    [refetch],
+  );
+
+  const handleReconnected = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  useLiveTelemetry({
+    onSummaryChanged: handleSummaryChanged,
+    onReconnected: handleReconnected,
   });
 
   if (!selectedRoomId) {
@@ -35,7 +57,7 @@ export const DailySummary: React.FC = () => {
     );
   }
 
-  if (loading) {
+  if (loading && !data && !previousData) {
     return (
       <div className="widget-container">
         <h2 className="text-xl font-semibold mb-4">Daily Summary</h2>
@@ -44,7 +66,8 @@ export const DailySummary: React.FC = () => {
     );
   }
 
-  if (error) {
+  // TODO: Create ErrorBoundary component
+  if (error && !data && !previousData) {
     return (
       <div className="widget-container">
         <h2 className="text-xl font-semibold mb-4">Daily Summary</h2>
@@ -57,7 +80,7 @@ export const DailySummary: React.FC = () => {
     );
   }
 
-  const summary = data?.dailySummary;
+  const summary = (data ?? previousData)?.dailySummary;
 
   if (!summary) {
     return (
@@ -83,9 +106,8 @@ export const DailySummary: React.FC = () => {
           })}
         </span>
       </div>
-
+      // TODO: make it as reusable widget, to not copypaste same structure
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Energy Summary */}
         <div className="bg-blue-50 rounded-lg p-4">
           <h3 className="text-lg font-medium text-blue-800 mb-3">Energy</h3>
           <div className="space-y-2">

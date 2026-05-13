@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useQuery } from "@apollo/client/react";
 import {
   BarChart,
@@ -25,30 +25,92 @@ import {
 } from "../../utils/dateUtils";
 import { ChartSkeleton } from "../ui/Skeleton";
 import { ErrorState } from "../ui/ErrorState";
+import { useLiveTelemetry } from "../../hooks/useLiveTelemetry";
+import type { LiveTelemetryUpdate } from "../../types/signalr";
+import { SensorType } from "../../types";
 
 export const EnergyChart: React.FC = () => {
+  // TODO: ref only to props which you use inside component (ex. in DailySummary)
   const { selectedRoomId } = useRoomStore();
   const [selectedTimeFrame, setSelectedTimeFrame] =
     useState<TimeFrame>("LAST_HOUR");
+  const [liveAppends, setLiveAppends] = useState<ChartDataPoint[]>([]);
 
-  const { startTime, endTime } = useMemo(() => {
-    return getTimeRangeFromTimeFrame(selectedTimeFrame);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (selectedTimeFrame !== "LAST_HOUR") return;
+    const id = setInterval(() => setTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
   }, [selectedTimeFrame]);
+
+  // TODO: merge those useEffects
+  useEffect(() => {
+    setLiveAppends([]);
+  }, [selectedTimeFrame]);
+
+  const { startTime: baseStartTime, endTime: baseEndTime } = useMemo(
+    () => getTimeRangeFromTimeFrame(selectedTimeFrame),
+    [selectedTimeFrame],
+  );
   const useAggregated = shouldUseAggregatedData(selectedTimeFrame);
   const useDailyAggregated = shouldUseDailyAggregatedData(selectedTimeFrame);
 
-  const { data, loading, error, refetch } = useQuery<
+  const { data, previousData, loading, error, refetch } = useQuery<
     GetEnergyDataResponse,
     GetEnergyDataVariables
   >(GET_ENERGY_DATA, {
     variables: {
       roomId: selectedRoomId!,
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
+      startTime: baseStartTime.toISOString(),
+      endTime: baseEndTime.toISOString(),
       useAggregated,
       useDailyAggregated,
     },
     skip: !selectedRoomId,
+  });
+
+  const visualStartTime = useMemo(() => {
+    if (selectedTimeFrame !== "LAST_HOUR") return 0;
+    return Date.now() - 60 * 60 * 1000;
+  }, [selectedTimeFrame, tick]);
+
+  const handleTelemetryUpdate = useCallback(
+    (update: LiveTelemetryUpdate) => {
+      if (selectedTimeFrame !== "LAST_HOUR") return;
+      const energyRecords = update.records.filter(
+        (r) => r.type === SensorType.ENERGY,
+      );
+      if (energyRecords.length === 0) return;
+      const newPoints: ChartDataPoint[] = energyRecords.map((r) => ({
+        timestamp: update.capturedAt,
+        value: r.energy ?? 0,
+      }));
+      setLiveAppends((prev) => [...prev, ...newPoints]);
+    },
+    [selectedTimeFrame],
+  );
+
+  const handleReconnected = useCallback(() => {
+    setLiveAppends([]);
+    const { startTime, endTime } = getTimeRangeFromTimeFrame(selectedTimeFrame);
+    refetch({
+      roomId: selectedRoomId!,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      useAggregated: useAggregated,
+      useDailyAggregated: useDailyAggregated,
+    });
+  }, [
+    refetch,
+    selectedRoomId,
+    selectedTimeFrame,
+    useAggregated,
+    useDailyAggregated,
+  ]);
+
+  useLiveTelemetry({
+    onTelemetryUpdate: handleTelemetryUpdate,
+    onReconnected: handleReconnected,
   });
 
   if (!selectedRoomId) {
@@ -62,7 +124,7 @@ export const EnergyChart: React.FC = () => {
     );
   }
 
-  if (loading) {
+  if (loading && !data && !previousData) {
     return (
       <div className="widget-container">
         <h2 className="text-xl font-semibold mb-4">Energy Consumption</h2>
@@ -71,7 +133,7 @@ export const EnergyChart: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error && !data && !previousData) {
     return (
       <div className="widget-container">
         <h2 className="text-xl font-semibold mb-4">Energy Consumption</h2>
@@ -84,20 +146,37 @@ export const EnergyChart: React.FC = () => {
     );
   }
 
-  const chartData: ChartDataPoint[] = useDailyAggregated
-    ? (data?.dailyAggregates || []).map((item) => ({
+  const activeData = data ?? previousData;
+
+  const baseData: ChartDataPoint[] = useDailyAggregated
+    ? (activeData?.dailyAggregates || []).map((item) => ({
         timestamp: item.dayBucket,
         value: item.totalEnergy || 0,
       }))
     : useAggregated
-      ? (data?.hourlyAggregates || []).map((item) => ({
+      ? (activeData?.hourlyAggregates || []).map((item) => ({
           timestamp: item.hourBucket,
           value: item.totalEnergy || 0,
         }))
-      : (data?.telemetryRecords || []).map((item) => ({
+      : (activeData?.telemetryRecords || []).map((item) => ({
           timestamp: item.capturedAt,
           value: item.energy || 0,
         }));
+
+  const latestBaseTime =
+    baseData.length > 0
+      ? Math.max(...baseData.map((d) => new Date(d.timestamp).getTime()))
+      : 0;
+
+  const chartData =
+    selectedTimeFrame === "LAST_HOUR"
+      ? [
+          ...baseData,
+          ...liveAppends.filter(
+            (p) => new Date(p.timestamp).getTime() > latestBaseTime,
+          ),
+        ].filter((p) => new Date(p.timestamp).getTime() >= visualStartTime)
+      : baseData;
 
   const timeFrameButtons: { value: TimeFrame; label: string }[] = [
     { value: "LAST_HOUR", label: "Last Hour" },
@@ -145,7 +224,7 @@ export const EnergyChart: React.FC = () => {
           />
           <Tooltip
             formatter={(value: any) => [`${value?.toFixed(2)} kWh`, "Energy"]}
-            labelFormatter={(value: string) =>
+            labelFormatter={(value: any) =>
               formatTimestamp(value, selectedTimeFrame)
             }
             labelStyle={{ color: "#374151" }}

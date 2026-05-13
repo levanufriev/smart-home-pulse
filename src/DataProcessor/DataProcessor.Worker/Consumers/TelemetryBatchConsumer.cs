@@ -54,6 +54,7 @@ public class TelemetryBatchConsumer(
         var outgoingEvent = new TelemetryBatchPersisted(
             BatchId: batch.EventId,
             SavedAt: DateTime.UtcNow,
+            CapturedAt: batch.Timestamp,
             SavedRecords: records.Select(r => r.ToSummary()).ToList()
         );
 
