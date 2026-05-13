@@ -16,6 +16,13 @@
     <Project Path="src/Shared/Shared.Contracts/Shared.Contracts.csproj" />
     <Project Path="src/Shared/Shared.Domain/Shared.Domain.csproj" Id="81bb4d11-59eb-49ea-bdd4-423ba1376cf6" />
   </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/DataProcessor.IntegrationTests/">
+    <Project Path="tests/DataProcessor.IntegrationTests/DataProcessor.IntegrationTests/DataProcessor.IntegrationTests.csproj" Id="75cf5956-2615-4a48-8d5a-26c9ce263695" />
+  </Folder>
+  <Folder Name="/tests/DataProcessor.UnitTests/">
+    <Project Path="tests/DataProcessor.UnitTests/DataProcessor.UnitTests/DataProcessor.UnitTests.csproj" Id="e6255294-4950-44a8-af08-d6528c67b20f" />
+  </Folder>
   <Project Path="docker-compose.dcproj">
     <Build />
   </Project>
