@@ -12,6 +12,10 @@ on:
       - 'src/NotificationService/**'
       - 'src/Shared/**'
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   dotnet-ci:
     uses: ./.github/workflows/shared-dotnet-ci.yml

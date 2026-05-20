@@ -8,7 +8,6 @@ interface SkeletonProps {
 
 const SKELETON_HEIGHTS = [120, 80, 150, 100, 130, 90, 110, 140];
 
-// TODO: One component per file
 export const Skeleton: React.FC<SkeletonProps> = ({
   className = "",
   width,
